@@ -1,0 +1,78 @@
+#!/usr/local/bin/yabasic
+
+import math
+
+dim rtf_time(25)
+dim rtf_size(25)
+count=0
+
+sub ts(t,s)
+count=count+1
+rtf_time(count)=t
+rtf_size(count)=s
+end sub
+
+
+ts(21,11598)
+ts(7*60+16,287643)
+
+#for a=1 to count
+#print rtf_time(a)," - ",rtf_size(a)
+#next a
+
+sub t2s(t)
+return langrange(rtf_time(),rtf_size(),count,t)
+end sub
+
+sub s2t(s)
+return langrange(rtf_size(),rtf_time(),count,s)
+end sub
+
+print  "cpu             : 486DX/40"
+print  "bogomips        : 19.92"
+print
+
+print " 1 s : ",t2s(1), " B"
+print "10 s : ",t2s(10)," B"
+print "30 s : ",t2s(30)," B"
+print
+print " 1 m : ",t2s(60)," B"
+print " 5 m : ",t2s(5*60)," B"
+print "10 m : ",t2s(10*60)," B"
+print "15 m : ",t2s(15*60)," B"
+print "30 m : ",t2s(30*60)," B"
+print
+onehour=t2s(60*60)
+print " 1 h : ",onehour," B"
+print " 2 h : ",t2s(2*60*60)," B"
+print " 5 h : ",t2s(5*60*60)," B"
+print "10 h : ",t2s(10*60*60)," B"
+print
+
+print "GRAPH"
+line input a$
+clear screen
+
+open window 1000,600
+
+window origin "lb"
+new curve
+
+maxy=s2t(1000000)
+
+for a=1 to 1000
+y=s2t(a*1000)
+line to a,600*(y/maxy)
+next a
+
+		    
+#for a=1 to 1000  
+#y=t2s(10+(a/50))
+#line to a,600*(y/maxy)
+#next a
+
+inkey$
+close window
+
+
+exit

@@ -1,0 +1,47 @@
+docu Convert number from/to octal in range 0..255
+docu http://martinmv.wz.cz
+docu Martin Mevald, martinmv@centrum.cz
+docu
+
+dim oct_table$(256)
+dim num_table(378)
+
+for a1=1 to 378
+num_table(a1)=-1
+next a1
+
+pos=1
+
+for a1=0 to 3
+for a2=0 to 7
+for a3=0 to 7
+
+oct_table$(pos)=str$(a1)+str$(a2)+str$(a3)
+num_table(a1*100+a2*10+a3+1)=pos-1
+
+pos=pos+1
+
+next a3
+next a2
+next a1
+
+export sub oct$(number)
+docu oct$(number) - convert decimal number to octal number
+return oct_table$(number+1)
+end sub
+
+export sub decoct(number)
+docu decoct(number) - convert octal number to decimal
+return num_table(number+1)
+end sub
+
+if (peek$("library")="main") then
+
+print "oct$(255)    = "+oct$(255)
+print "oct$(8)      = "+oct$(8)
+print
+
+print "decoct(10)  = "+str$(decoct(10))
+print "decoct(377) = "+str$(decoct(377))
+fi
+

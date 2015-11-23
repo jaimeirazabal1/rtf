@@ -1,0 +1,1 @@
+@php.exe -q rtf2htm.php %1 %2 %3 %4

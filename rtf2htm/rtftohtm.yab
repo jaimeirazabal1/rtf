@@ -1,0 +1,1013 @@
+#!/usr/local/bin/yabasic
+
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+#    (C) Martin Mevald, 2002, 2003, 2004, 2005
+#    martinmv@penguin.cz
+#    http://www.penguin.cz/~martinmv/
+
+#    Thanks Piotr Kêplicz <keplicz@ez.pl> 
+
+
+import oct
+import preg_compiler
+import replaces
+
+preg_compiler.opt=1
+
+changeescape("@")
+sub srepeatrecord(a$,b$)
+saverecords("rtftohtm.php","") : REM internal
+repeatrecord(a$,b$)
+end sub
+
+sub hex_insertrecord(a$,b$)
+
+code=dec(left$(right$(a$,3),2))
+
+h1$=lower$(hex$(code))
+if (len(h1$)<2) h1$="0"+h1$
+
+h11$=mid$(h1$,1,1)
+h12$=mid$(h1$,2,1)
+
+if (h11$<>upper$(h11$)) h11$="["+h11$+upper$(h11$)+"]"
+if (h12$<>upper$(h12$)) h12$="["+h12$+upper$(h12$)+"]"
+
+insertrecord("(@@@@'"+h11$+h12$+")",b$) 
+
+if (chr$(code)<>b$) insertrecord("(@"+oct$(code)+")",b$)
+end sub
+
+REM 
+REM insertrecord(a$,b$)
+REM insertrecord("(@"+oct$(dec(left$(right$(a$,3),2)))+")",b$)
+REM print "(@"+oct$(dec(left$(right$(a$,3),2)))+")"
+REM end sub
+
+fontcenter$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='3'>"
+fontright$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>"
+fontleft$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>"
+fontdefault$=""
+fontjustify$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>"
+
+fontfootnote$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial'  size='1'>"
+
+httplinkcolor1$="<font color='#000000'>"
+httplinkcolor2$="</font>"
+
+emaillinkcolor1$="<font color='#000000'>"
+emaillinkcolor2$="</font>"
+
+footnotecolor1$="<font color='#000000'>"
+footnotecolor2$="</font>"
+
+REM fontcenter$="<font size='+1'>"
+REM fontright$=""
+REM fontleft$=""
+REM fontjustify$=""
+
+tablewidth$="90%"
+
+tabulator$="&nbsp<!--BACKSLASHSEMICOLON-->&nbsp<!--BACKSLASHSEMICOLON-->&nbsp<!--BACKSLASHSEMICOLON-->&nbsp<!--BACKSLASHSEMICOLON-->&nbsp<!--BACKSLASHSEMICOLON-->"
+
+REM special footnotes: ^1 - first footnote, ^^1 - footnote text
+
+x$=system$("php -f version_out.php")
+
+if (x$="VER1") then special_footnotes=1
+else if (x$="VER0") then special_footnotes=0
+else error "version.php - unknown version"
+fi
+fi
+
+
+print "special_footnotes: ",special_footnotes
+
+
+REM < & >
+
+insertrecord("(&)","&amp<@02!--BACKSLASHSEMICOLON-->@02")
+
+insertrecord("(>([^@02]))","&gt<@02!--BACKSLASHSEMICOLON-->@02@@1")
+insertrecord("(<([^@02]))","&lt<@02!--BACKSLASHSEMICOLON-->@02@@1")
+
+insertrecord("([@02@@00])","")
+
+ 
+
+REM delete new line characters
+
+insertrecord("([@@012@@015])","<!--CR-->")
+
+
+REM \ NEWLINE
+REM insertrecord("(@@@@<!--CR-->@@@@<!--CR-->)","\par ")
+
+REM \<CR>
+insertrecord("(@@@@<!--CR-->)","<br>")
+
+
+REM \line --> <br>
+insertrecord("(@@@@line([^a-zA-Z0-9]))","<br>@@1")
+
+REM footnotes
+if (special_footnotes) then 
+
+ftarget$="<a name=@\"xx@@1@\">&nbsp<!--BACKSLASHSEMICOLON--><a href=@\"\#@@1@\">"+footnotecolor1$+"[@@1]"+footnotecolor2$+"</a>"
+fname$="<a name=@\"@@1@\"><a href=@\"\#xx@@1@\">"+footnotecolor1$+"[@@1]"+footnotecolor2$+"</a>"
+
+REM normal
+insertrecord("(@@^@@^([0-9]+))",fname$)
+insertrecord("([{ ]@@^([0-9]+))",ftarget$)
+insertrecord("(<!--CR-->@@^([0-9]+))",ftarget$)
+
+REM rtf cmds in construction
+
+
+fname2$=replace_repeat$(fname$,"@@1","@@2")+"@@1 "
+fname3$=replace_repeat$(fname$,"@@1","@@3")+"@@1 @@2 "
+ftarget2$=replace_repeat$(ftarget$,"@@1","@@2")+"@@1 "
+
+if 0 then
+print fname$
+print fname2$
+print fname3$
+print ftarget$
+print ftarget2$
+exit
+fi
+
+insertrecord("(@@^@@^(@@@@[^ ]* )([0-9]+))",fname2$)
+insertrecord("(@@^(@@@@[^ ]* )@@^(@@@@[^ ]* )([0-9]+))",fname3$)
+insertrecord("([{ ]@@^(@@@@[^ ]* )([0-9]+))",ftarget2$)
+insertrecord("(<!--CR-->@@^(@@@@[^ ]* )([0-9]+))",ftarget2$)
+
+
+fi
+REM save text values
+
+insertrecord("(@@@@@@@@)","<!--BACKSLASH-->")
+insertrecord("(@@@@{)","<!--BRACERIGHT-->")
+insertrecord("(@@@@})","<!--BRACELEFT-->")
+insertrecord("(@@@@;)","<!--BACKSLASHSEMICOLON-->")
+
+
+REM {\b i u
+
+if 0 then
+
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u]) ([^}]*)})","@@1@@2@@3 @@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u]) ([^}]*)})","@@1@@2 @@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({(@@@@[b|i|u]) ([^}]*)})","@@1 @@2@@1<!--0--> ")
+
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u]) ([^}]*)})","@@1@@2@@3 @@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u]) ([^}]*)})","@@1@@2 @@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u]) ([^}]*)})","@@1 @@2@@1<!--0--> ")
+
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1@@2@@3 @@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1@@2 @@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1 @@2@@1<!--0--> ")
+
+
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1@@2@@3 @@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1@@2 @@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({(@@@@[b|i|u])<!--CR-->([^}]*)})","@@1 @@2@@1<!--0--> ")
+
+
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u])@@@@([^}]*)})","@@1@@2@@3@@@@@@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({(@@@@[b|i|u])(@@@@[b|i|u])@@@@([^}]*)})","@@1@@2@@@@@@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({(@@@@[b|i|u])@@@@([^}]*)})","@@1@@@@@@2@@1<!--0--> ")
+
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u])(@@@@[b|i|u])@@@@([^}]*)})","@@1@@2@@3@@@@@@4@@1<!--0-->@@2<!--0-->@@3<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u])(@@@@[b|i|u])@@@@([^}]*)})","@@1@@2@@@@@@3@@1<!--0-->@@2<!--0--> ")
+insertrecord("({[^}]*(@@@@[b|i|u])@@@@([^}]*)})","@@1@@@@@@2@@1<!--0--> ")
+
+
+insertrecord("(<!--0-->)","0")
+
+fi
+
+REM \caps --> <!--CAPS-->
+
+REM 0808 insertrecord("(}{@@@@caps([^}]*)}{)","<!--CAPS-->@@1<!--ENDCAPS-->")
+
+insertrecord("(@@@@caps([^a-zA-Z0-9]))","<!--CAPS-->@@1")
+
+REM "\fs20  " --> "\fs20 <!--SPACE-->"
+
+REM 0808 insertrecord("((@@@@f[^ @@@@]*)  )","@@1 <!--SPACE-->")
+
+REM {\fs20 } {\b\fs20 }
+
+REM insertrecord("({@@@@f[^ @@@@]*@@@@f[^ @@@@]* })","<!--SPACE-->")
+REM insertrecord("({@@@@f[^ @@@@]* })","<!--SPACE-->")
+
+REM insertrecord("({@@@@[b|i|u]@@@@f[^ @@@@]* })","<!--SPACE-->")
+REM insertrecord("({@@@@[b|i|u]@@@@f[^ @@@@]*@@@@f[^ @@@@]* })","<!--SPACE-->")
+REM }{\fs20\fs4 n}
+
+if 0 then
+
+insertrecord("(}{@@@@b@@@@f[^ @@@@]*@@@@f[^ @@@@]* ([^}]*)}{)","@@@@b @@1@@@@b0 ")
+insertrecord("(}{@@@@i@@@@f[^ @@@@]*@@@@f[^ @@@@]* ([^}]*)}{)","@@@@i @@1@@@@i0 ")
+insertrecord("(}{@@@@u@@@@f[^ @@@@]*@@@@f[^ @@@@]* ([^}]*)}{)","@@@@u @@1@@@@u0 ")
+fi
+
+REM }{\fs20 n}{
+
+if 0 then
+insertrecord("(}{@@@@b@@@@f[^ @@@@]* ([^}]*)}{)","@@@@b @@1@@@@b0 ")
+insertrecord("(}{@@@@i@@@@f[^ @@@@]* ([^}]*)}{)","@@@@i @@1@@@@i0 ")
+insertrecord("(}{@@@@u@@@@f[^ @@@@]* ([^}]*)}{)","@@@@u @@1@@@@u0 ")
+
+insertrecord("(}{@@@@f[^ @@@@]* ([^}]*)}{)","@@1") : REM xxxxxxx 151
+insertrecord("(}{@@@@f[^ @@@@]*@@@@f[^ @@@@]* ([^}]*)}{)","@@1")
+
+fi
+REM }text{
+if 0 then
+insertrecord("(}([a-zA-Z0-9@@@@'][a-zA-Z0-9@@@@']*){)","@@1")
+fi
+
+REM Benefièn{\f11 í } --> Benefièní 
+if 0 then
+insertrecord("({@@@@f[^ @@@@]* ([^} @@@@]) })","@@1 ")
+insertrecord("({@@@@f[^ @@@@]* ([^} @@@@])})","@@1")
+fi
+REM { } --> " "
+
+insertrecord("({ })","  ")
+
+if 0 then
+REM {\b  }
+insertrecord("(({@@@@[biu][^}]*}))","@@1</sup></b></i></u>")
+
+insertrecord("(({@@@@[a-zA-Z0-9]*@@@@[biu][^}]*}))","@@1</sup></b></i></u>")
+
+REM {\b\f1\cgrid0 A}{\f1\cgrid0  }{\b\f1\cgrid0 zdaleka }
+
+insertrecord("(([~a-zA-Z0-9@@@@'])}{@@@@f[a-zA-Z0-9@@@@]*  })","@@1 ")
+
+insertrecord("(([~a-zA-Z0-9@@@@'])}{([a-zA-Z0-9@@@@]*)@@@@f[a-zA-Z0-9@@@@]*  })","@@1@@2  ")
+
+REM pronesl}{\fs16 }{\f122\fs16 \'f8e\'e8 --> 
+REM pronesl}{\fs16 }{\f122\fs16  \'f8e\'e8
+
+insertrecord("( }{(@@@@f[a-zA-Z0-9@@@@]*[ ]))"," }{@@1 ")
+insertrecord("( <!--CR-->}{(@@@@f[a-zA-Z0-9@@@@]*[ ]))"," }{@@1 ")
+
+REM cirkus}{e --> cirkuse
+
+insertrecord("(([~a-zA-Z0-9@@@@'])}{<!--CR--><!--CR-->@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@']))","@@1@@2")
+insertrecord("(([~a-zA-Z0-9@@@@'])}{<!--CR-->@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@']))","@@1@@2")
+REM 
+
+insertrecord("(([~a-zA-Z0-9@@@@'])}{@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@']))","@@1@@2")
+insertrecord("(([~a-zA-Z0-9@@@@'])}{@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@']))","@@1@@2")
+
+fi
+
+REM >>>>>>>>>>>>>
+if 0 then
+
+#insertrecord("(([~a-zA-Z0-9@@@@'])}{([~a-zA-Z0-9@@@@']))","@@1@@2")
+
+
+insertrecord("((@@@@~ )}{([a-zA-Z0-9]))","@@1@@2")
+insertrecord("((@@@@~ )}{(@@@@'[a-zA-Z0-9][a-zA-Z0-9]))","@@1@@2")
+
+insertrecord("((@@@@~)}{([a-zA-Z0-9]))","@@1@@2")
+insertrecord("((@@@@~)}{(@@@@'[a-zA-Z0-9][a-zA-Z0-9]))","@@1@@2")
+
+insertrecord("((@@@@'[a-zA-Z0-9][a-zA-Z0-9])}{([a-zA-Z0-9]))","@@1@@2")
+insertrecord("((@@@@'[a-zA-Z0-9][a-zA-Z0-9])}{(@@@@'[a-zA-Z0-9][a-zA-Z0-9]))","@@1@@2")
+
+insertrecord("(([a-zA-Z0-9])}{([a-zA-Z0-9]))","@@1@@2")
+insertrecord("(([a-zA-Z0-9])}{(@@@@'[a-zA-Z0-9][a-zA-Z0-9]))","@@1@@2")
+
+insertrecord("(([a-zA-Z0-9])}{ )","@@1}{<!--SPACE-->")
+
+REM >>>>>>>>>>>>>>
+
+insertrecord("(([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*)}<!--CR-->{@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*))","@@1@@2")
+insertrecord("(([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*)}<!--CR-->{([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*))","@@1@@2")
+
+insertrecord("(([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*)}<!--CR--><!--CR-->{@@@@f[a-zA-Z0-9@@@@]*[ ]([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*))","@@1@@2")
+insertrecord("(([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*)}<!--CR--><!--CR-->{([~a-zA-Z0-9@@@@'][~a-zA-Z0-9@@@@']*))","@@1@@2")
+
+fi
+
+REM
+
+REM --------------
+
+preg_compiler.opt=1
+
+insertrecord("(@@@@'5C)","<!--BACKSLASH-->")
+
+insertrecord("(@@@@'7[Bb])","<!--BRACERIGHT-->")
+
+insertrecord("(@@@@'7[Dd])","<!--BRACELEFT-->")
+
+insertrecord("(@@@@'[Aa]7)","§<!--PARAGRAPH-->")
+
+insertrecord("(@@@@'[Ee]3)","@343")
+
+insertrecord("(@@@@'9[Cc])","@266")
+
+insertrecord("(@@@@'[Ee]6)","@346")
+
+
+
+REM semicolon & bracelet
+
+REM xx insertrecord("(@@@@par(.*);})","@@@@par@@1<!--BACKSLASHSEMICOLON-->}")
+
+ 
+
+REM delete unicode control keywords \uc
+
+insertrecord("(@@@@uc[0-9]*)","")
+
+REM delete \u* keywords - conflicts with unicode
+
+insertrecord("(@@@@u[^lL0-9][a-zA-Z0-9]*)","")
+
+preg_compiler.opt=1
+
+hex_insertrecord("(@@@@'85)","...<!--DOTS--> ")
+
+
+hex_insertrecord("(@@@@'ad)","...<!--DOTS--> ")
+
+hex_insertrecord("(@@@@'a9)","(C)<!--COPYRIGHT-->")
+
+
+hex_insertrecord("(@@@@'ae)","(R)<!--REGISTERED-->")
+
+hex_insertrecord("(@@@@'99)","(TM)<!--TRADEMARK-->")
+
+insertrecord("(@@@@ldblquote[ ]?)","@\"<!--LEFTDOUBLEQUOTE-->")
+insertrecord("(@@@@rdblquote[ ]?)","@\"<!--RIGHTDOUBLEQUOTE-->")
+insertrecord("(@@@@dblquote[ ]?)","@\"<!--DOUBLEQUOTE-->")
+insertrecord("(@@@@lquote[ ]?)","'<!--LEFTQUOTE-->")
+insertrecord("(@@@@rquote[ ]?)","`<!--RIGHTQUOTE-->")
+
+insertrecord("(@@@@~[ ]?)","&nbsp<!--BACKSLASHSEMICOLON-->")
+
+hex_insertrecord("(@@@@'a0)","&nbsp<!--BACKSLASHSEMICOLON-->")
+
+
+REM windows character
+
+hex_insertrecord("(@@@@'91)","'<!--LEFTQUOTE-->")
+hex_insertrecord("(@@@@'82)","'<!--LEFTQUOTE-->")
+hex_insertrecord("(@@@@'92)","`<!--RIGHTQUOTE-->")
+hex_insertrecord("(@@@@'b4)","`<!--RIGHTQUOTE-->")
+
+
+hex_insertrecord("(@@@@'93)","@\"<!--LEFTDOUBLEQUOTE-->")
+
+
+hex_insertrecord("(@@@@'94)","@\"<!--RIGHTDOUBLEQUOTE-->")
+
+hex_insertrecord("(@@@@'ab)","&lt<!--BACKSLASHSEMICOLON--><!--LEFTFRENCHQUOTE-->")
+hex_insertrecord("(@@@@'bb)","&gt<!--BACKSLASHSEMICOLON--><!--RIGHTFRENCHQUOTE-->")
+
+
+hex_insertrecord("(@@@@'84)","@\"<!--LEFTCROSSOVERQUOTE-->")
+
+
+hex_insertrecord("(@@@@'93)","@\"<!--RIGHTCROSSOVERQUOTE-->")
+
+insertrecord("(@@@@e([mn])dash)","-<!--E@@1DASH-->")
+hex_insertrecord("(@@@@'96)","-<!--ENDASH-->")
+
+REM CP-1250 --> ISO Latin 2
+
+sub o(n1,n2)
+
+print "code: "+str$(n1)
+
+h1$=lower$(hex$(n1))
+if (len(h1$)<2) h1$="0"+h1$
+
+h11$=mid$(h1$,1,1)
+h12$=mid$(h1$,2,1)
+
+if (h11$<>upper$(h11$)) h11$="["+h11$+upper$(h11$)+"]"
+if (h12$<>upper$(h12$)) h12$="["+h12$+upper$(h12$)+"]"
+ 
+
+insertrecord("(@@@@'"+h11$+h12$+")","@"+oct$(n2))
+
+end sub
+
+sub ox(n1,x$)
+
+print "code: "+str$(n1)
+
+h1$=lower$(hex$(n1))
+if (len(h1$)<2) h1$="0"+h1$
+
+h11$=mid$(h1$,1,1)
+h12$=mid$(h1$,2,1)
+
+if (h11$<>upper$(h11$)) h11$="["+h11$+upper$(h11$)+"]"
+if (h12$<>upper$(h12$)) h12$="["+h12$+upper$(h12$)+"]"
+ 
+
+insertrecord("(@@@@'"+h11$+h12$+")",x$)
+
+end sub
+
+
+REM bullets
+
+hex_insertrecord("(@@@@'b7)","<ul><li>"+fontdefault$)
+
+hex_insertrecord("(@@@@'a4)","<ul><li>"+fontdefault$)
+
+hex_insertrecord("(@@@@'95)","<ul><li>"+fontdefault$)
+
+insertrecord("(@@@@listtext([^a-zA-Z0-9]))","<ul><li>"+fontdefault$+"@@1")
+
+
+
+
+
+o(124,124)
+o(126,126)
+o(127,asc("#"))
+
+ox(128,"Euro<!--EURO-->")
+ox(129,"?")
+ox(131,"?")
+ox(134,"+<!--DAGGER-->")
+ox(135,"++<!--DOUBLEDAGGER-->")
+ox(136,"?")
+ox(137,"promile<!--PROMILE-->")
+ox(139,"&lt<!--BACKSLASHSEMICOLON--><!--1FQUOTEL-->")
+
+o(140,166)
+o(143,172)
+ox(144,"?")
+ox(151,"-<!--EMDASH-->")
+ox(152,"?")
+ox(155,"&gt<!--BACKSLASHSEMICOLON--><!--1FQUOTER-->")
+o(159,188)
+ox(160,"&nbsp<!--BACKSLASHSEMICOLON-->")
+
+o(161,183)
+o(162,162)
+o(163,163)
+o(165,161)
+ox(166,"|")
+o(168,168)
+
+o(170,170)
+ox(172,"-")
+o(175,175)
+o(176,176)
+ox(177,"+-<!--PLUSMINUS-->")
+o(178,178)
+o(179,179)
+
+ox(181,"u<!--MICRO-->")
+ox(182,"PI<!--PI-->")
+REM ox(183,".") - bullet
+o(184,184)
+o(185,177)
+o(186,186)
+o(189,189)
+
+o(191,191)
+o(194,194)
+o(195,195)
+o(198,198)
+o(199,199)
+
+o(202,202)
+o(203,203)
+o(206,206)
+o(208,208)
+o(209,209)
+o(215,215)
+
+o(222,222)
+o(223,223)
+o(226,226)
+
+o(234,234)
+o(235,235)
+o(238,238)
+o(240,240)
+o(241,241)
+o(247,247)
+
+o(254,254)
+o(255,255)
+
+hex_insertrecord("(@@@@'e7)","ç")
+preg_compiler.opt=0
+REM import ISO Latin 2 characters
+import kody
+
+preg_compiler.opt=1
+
+REM delete hyphens - separatrixs
+
+REM insertrecord("(@@@@-)","-")
+insertrecord("(@@@@-)","")
+
+insertrecord("()","&nbsp<!--BACKSLASHSEMICOLON-->")
+
+
+
+insertrecord("(@@@@tab([^a-zA-Z0-9]))",tabulator$+"<!--TAB-->@@1")
+
+REM ----------------
+
+
+
+REM upper&lower index
+
+insertrecord("(@@@@super([^a-zA-Z0-9]))","<sup>@@1")
+insertrecord("(@@@@super0([^a-zA-Z0-9]))","</sup>@@1")
+
+insertrecord("(@@@@supernone([^a-zA-Z0-9]))","</sup>@@1")
+preg_compiler.opt=0
+#insertrecord("(@@@@sub([^a-zA-Z0-9]))","<sub>@@1")
+#insertrecord("(@@@@sub0([^a-zA-Z0-9]))","</sub>@@1")
+
+#insertrecord("(@@@@subnone([^a-zA-Z0-9]))","</sub>@@1")
+
+#insertrecord("(@@@@nosupersub([^a-zA-Z0-9]))","</sup></sub>"+fontleft$+"@@1")
+insertrecord("(@@@@nosupersub([^a-zA-Z0-9]))","</sup>@@1")
+
+
+
+if 0 then
+
+
+REM b correction
+
+
+    insertrecord("(@@@@b0([^a-zA-Z0-9]))","@02@@1")
+    insertrecord("(@@@@bnone([^a-zA-Z0-9]))","@02@@1")
+    insertrecord("(@@@@plain([^a-zA-Z0-9]))","@03@@1")
+    insertrecord("(@@@@par([^a-zA-Z0-9]))","@04@@1")
+    
+REM    for a=1 to 50
+REM    insertrecord("((@@@@b[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@b0@05@@@@b")
+REM    next a
+
+    srepeatrecord("((@@@@b[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@b0@05@@@@b")    
+
+    insertrecord("(@02)","@@@@b0")
+    insertrecord("(@05)","@04")
+
+    REM italics
+
+    insertrecord("(@@@@i0([^a-zA-Z0-9]))","@02@@1")
+    insertrecord("(@@@@inone([^a-zA-Z0-9]))","@02@@1")
+    
+REM for a=1 to 50
+REM insertrecord("((@@@@i[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@i0@05@@@@i")
+REM next a
+
+    srepeatrecord("((@@@@i[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@i0@05@@@@i")
+    
+    insertrecord("(@02)","@@@@i0")
+    insertrecord("(@05)","@04")
+    
+    REM underline	    	    
+    insertrecord("(@@@@ul0([^a-zA-Z0-9]))","@02@@1")
+    insertrecord("(@@@@ulnone([^a-zA-Z0-9]))","@02@@1")
+    
+REM for a=1 to 50
+REM insertrecord("((@@@@ul[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@ul0@05@@@@ul")
+REM next a
+
+    srepeatrecord("((@@@@ul[^a-zA-Z0-9@04][^}@02@03@04]*)@04)","@@1@@@@ul0@05@@@@ul")
+    
+    insertrecord("(@02)","@@@@ul0")
+    insertrecord("(@05)","@04")
+    insertrecord("(@03)","@@@@plain")
+
+    REM qc
+    
+    insertrecord("(@@@@pard([^a-zA-Z0-9]))","@03@@1")
+    insertrecord("(@@@@qr([^a-zA-Z0-9]))","@02@@1")
+
+    insertrecord("(@@@@ql([^a-zA-Z0-9]))","@06@@1")
+
+REM for a=1 to 50    
+REM insertrecord("((@@@@qc[^a-zA-Z0-9@04][^@02@03@04@06]*)@04)","@@1@@@@qc")
+REM next a
+
+    srepeatrecord("((@@@@qc[^a-zA-Z0-9@04][^@02@03@04@06]*)@04)","@@1@@@@qc")
+    
+    REM qr
+    
+    insertrecord("(@02)","@@@@qr")
+    insertrecord("(@@@@qc([^a-zA-Z0-9]))","@02@@1")
+
+REM for a=1 to 50    
+REM insertrecord("((@@@@qr[^a-zA-Z0-9@04][^@02@03@04@06]*)@04)","@@1@@@@qr")
+REM next a
+
+    srepeatrecord("((@@@@qr[^a-zA-Z0-9@04][^@02@03@04@06]*)@04)","@@1@@@@qr")
+    
+    insertrecord("(@02)","@@@@qc")
+    
+    REM restore
+    
+    insertrecord("(@03)","@@@@pard")    
+    insertrecord("(@04)","@@@@par")
+    insertrecord("(@05)","@@@@par")
+    insertrecord("(@06)","@@@@ql")
+
+
+
+insertrecord("((@@@@par[-a-zA-Z0-9@@@@]*)@@@@plain([^a-zA-Z0-9]))","</sup></b></i></u>@@1@@2")
+
+fi
+
+REM bold, italic & underline
+REM ------OK
+
+REM + space
+
+preg_compiler.opt=1
+insertrecord("(@@@@([bi])  )","<@@1><!--SPACE-->")
+insertrecord("(@@@@([bi])0  )","</@@1><!--SPACE-->"+fontleft$+"")
+insertrecord("(@@@@([bi])none  )","</@@1><!--SPACE-->"+fontleft$+"")
+
+insertrecord("(@@@@ul  )","<u><!--SPACE-->")
+insertrecord("(@@@@ul0  )","</u><!--SPACE-->"+fontleft$+"")
+insertrecord("(@@@@ulnone  )","</u><!--SPACE-->"+fontleft$+"")
+
+
+REM
+
+insertrecord("(@@@@([bi]) )","<@@1>")
+insertrecord("(@@@@([bi])0 )","</@@1>"+fontleft$+"")
+insertrecord("(@@@@([bi])none )","</@@1>"+fontleft$+"")
+
+insertrecord("(@@@@ul )","<u>")
+insertrecord("(@@@@ul0 )","</u>"+fontleft$+"")
+insertrecord("(@@@@ulnone )","</u>"+fontleft$+"")
+
+REM #########
+
+preg_compiler.opt=0
+insertrecord("(@@@@b([^a-zA-Z0-9]))","<b>@@1")
+insertrecord("(@@@@b0([^a-zA-Z0-9]))","</b>"+fontleft$+"@@1")
+insertrecord("(@@@@bnone([^a-zA-Z0-9]))","</b>"+fontleft$+"@@1")
+
+insertrecord("(@@@@i([^a-zA-Z0-9]))","<i>@@1")
+insertrecord("(@@@@i0([^a-zA-Z0-9]))","</i>"+fontleft$+"@@1")
+insertrecord("(@@@@inone([^a-zA-Z0-9]))","</i>"+fontleft$+"@@1")
+
+insertrecord("(@@@@ul([^a-zA-Z0-9]))","<u>@@1")
+insertrecord("(@@@@ul0([^a-zA-Z0-9]))","</u>"+fontleft$+"@@1")
+insertrecord("(@@@@ulnone([^a-zA-Z0-9]))","</u>"+fontleft$+"@@1")
+
+
+preg_compiler.opt=1
+#insertrecord("(@@@@qc @@@@plain([^a-zA-Z0-9]))","@@@@qc@@1")
+
+REM insertrecord("(@@@@plain([^a-zA-Z0-9]))","</sup></b></i></u>"+fontleft$+"@@1")
+
+insertrecord("(@@@@plain([^a-zA-Z0-9]))","<!--ENDCAPS--></sup></b></i></u>@@1")    
+
+REM Space After paragraph,Space Befora     
+
+insertrecord("(@@@@s([ab])[ ]*([0-9]+))","<!--S@@1 @@2 -->")
+
+#insertrecord("(@@@@sa([0-9][0-9]*))","<!--SA @@1 -->")
+#insertrecord("(@@@@sb([0-9][0-9]*))","<!--SB @@1 -->")
+#insertrecord("(@@@@sa[ ]*([0-9][0-9]*))","<!--SA @@1 -->")
+#insertrecord("(@@@@sb[ ]*([0-9][0-9]*))","<!--SB @@1 -->")
+
+
+REM normal footnotes
+
+insertrecord("(@@@@footnote([^a-zA-Z0-9]))","<!--FOOTNOTE-->@@1")
+insertrecord("(@@@@chftn([^a-zA-Z0-9]))","<!--CHFTN-->@@1")
+
+REM paragraphs
+
+
+insertrecord("(@@@@par([^a-zA-Z0-9]))","<!--PAR-->@@1")
+insertrecord("(@@@@pard([^a-zA-Z0-9]))","<!--PARD-->@@1")
+insertrecord("(@@@@q([crlj])([^a-zA-Z0-9]))","<!--Q@@1-->@@2")
+
+REM insertrecord("(@@@@qr([^a-zA-Z0-9]))","<!--QR-->@@1")
+
+REM insertrecord("(@@@@ql([^a-zA-Z0-9]))","<!--QL-->@@1")
+
+
+REM new code - paragraphs
+
+#insertrecord("(@@@@par([^a-zA-Z0-9]))","</li></ul></font></p><p>"+fontleft$+"@@1")
+#insertrecord("(@@@@pard([^a-zA-Z0-9]))","</center>@@1")
+#insertrecord("(@@@@qc([^a-zA-Z0-9]))","</li></ul></font></p><center><p>"+fontcenter$+"@@1")
+#insertrecord("(@@@@qr([^a-zA-Z0-9]))","</li></ul></font></center></p><p align='right'>"+fontright$+"@@1")
+#insertrecord("(@@@@ql([^a-zA-Z0-9]))","</li></ul></font></p></center><p align='left'>"+fontleft$+"@@1")
+
+
+REM justify is off
+REM insertrecord("(@@@@qj([^a-zA-Z0-9]))","<!--QJ-->@@1")
+
+REM table
+
+insertrecord("(@@@@trowd([^a-zA-Z0-9]))","<table cellpadding='0' cellspacing='0' border='1' align='center' width='"+tablewidth$+"'><td>@@1")
+insertrecord("(@@@@cell([^a-zA-Z0-9]))","</td><td>"+fontdefault$+"@@1")
+
+insertrecord("(@@@@row[ ]?})","</td></table>")
+insertrecord("(@@@@row<!--CR--><!--CR-->})","</td></table>")
+insertrecord("(@@@@row<!--CR-->})","</td></table>")
+
+insertrecord("(@@@@row([^a-zA-Z0-9]))","</td><tr><td>"+fontdefault$+"@@1")
+preg_compiler.opt=0
+insertrecord("(<td></td>)","")
+
+REM rtf delete
+REM -------OK 
+
+REM {\*\docvar {VTINIT}{1}}
+
+
+REM insertrecord("(@@@@insrsid[0-9]*[ ]?)","")
+
+insertrecord("(@@@@insrsid[0-9]*  )","<!--SPACE-->")
+insertrecord("(@@@@insrsid[0-9]* )","<!--NONE-->")
+preg_compiler.opt=1
+insertrecord("({@@@@@@*@@@@docvar[ ]*{[^}]*}{[^}]*}})","")
+
+
+insertrecord("(@@@@fnil [^;]*)","")
+
+insertrecord("(@@@@s. [^}]*)","")
+
+REM 0808 insertrecord("(@@@@f[0-9]* )","<!--CR-->")
+insertrecord("(@@@@f.[0-9]* )","<!--CR-->")
+
+insertrecord("(@@@@leveltext[^}]*)","")
+insertrecord("(@@@@levelnumbers[^}]*)","")
+
+insertrecord("(@@@@fname[ a-zA-Z0-9]*;}[ a-zA-Z0-9]*;})","")
+
+insertrecord("({@@@@abilist[^}]*)","")
+
+insertrecord("({@@@@@@*@@@@listtag0})","<!--CR-->")
+
+REM xx insertrecord("(@@@@fonttbl.*@@@@info)","@@@@info")
+
+insertrecord("({@@@@author[^}]*)","")
+insertrecord("({@@@@company[^}]*)","")
+
+insertrecord("({@@@@operator[^}]*})","")
+insertrecord("({@@@@title[^}]*)","")
+
+insertrecord("({@@@@@@*@@@@company[^}]*})","")
+
+
+insertrecord("(@@@@snext[^}]*)","")
+
+insertrecord("(@@@@sbasedon[^}]*)","")
+
+REM new 
+insertrecord("(@@@@noproof [0-9]*})","") 
+insertrecord("(@@@@noproof[0-9]*)","")
+
+REM too general -- insertrecord("(@@@@li[^}]*)","")
+
+insertrecord("(@@@@fttruetype[^}]*)","")
+preg_compiler.opt=0
+insertrecord("(@@@@fcharset[0-9]*[^}]*)","")
+preg_compiler.opt=1
+insertrecord("({@@@@s[0-9]*@@@@[^}]*)","")
+
+REM too general -- insertrecord("(@@@@fs[0-9]* [^}]*)","")
+
+REM too general -- insertrecord("(@@@@f.*@@@@fcharset.*;})","")
+
+REM insertrecord("(@@@@@@*@@@@fldinst{[ ]*HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","@@1")
+
+preg_compiler.opt=0
+
+REM local
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--CR--><[^>]*><!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--CR--><!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><[^>]*><!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<[^>]*><!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--SPACE-->HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[^}]*}{[^ ]*[ ]*HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+
+REM insertrecord("(@@@@@@*@@@@fldinst[ ]*{[^}]*}{[^ ]*[ ]*HYPERLINK[ ]*<!--BACKSLASH-->)"," XXXTESTXXX ")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*HYPERLINK[ ]*<!--BACKSLASH-->[lL][ ]*@\"([^@\"]*)@\"[ ]*})","<a href='#@@1'>")
+
+
+REM http
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--CR--><[^>]*><!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--CR--><!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><[^>]*><!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--CR--><!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<[^>]*><!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*<!--SPACE-->HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+
+insertrecord("(@@@@@@*@@@@fldinst[ ]*{[ ]*HYPERLINK[ ]*@\"([^@\"]*)@\"[ ]*})","<a href='@@1'>")
+
+insertrecord("(@@@@fldrslt([^}]*}{[^}]*}{[^}]*}))","@@1</a>")
+insertrecord("(@@@@fldrslt([^}]*}{[^}]*}))","@@1</a>")
+
+insertrecord("(@@@@fldrslt([^}]*))","@@1</a>")
+
+REM local "a name"
+
+insertrecord("(@@@@@@*@@@@bkmkstart[ ]*([^}]*)})","<a name='@@1'>")
+insertrecord("(@@@@@@*@@@@bkmend[^}]*})","</a>")
+
+
+insertrecord("(@@@@@@*@@@@[^}]*)","")
+
+
+insertrecord("(@@@@pnt[^}{<>]*})","")
+
+REM hide unknown unicode text
+
+insertrecord("(@@@@u([@@-]?[0-9]+)[ ]?)","<!--@@1-->")
+
+REM control word and spaces
+
+insertrecord("(@@@@[a-zA-Z0-9][a-zA-Z0-9]*  )","<!--SPACE-->")
+
+REM delete all control words
+
+insertrecord("(@@@@[@@*';a-zA-Z0-9@@-@@@@]*[ ]?)","")
+
+REM " }{[]" --> " }{"
+
+insertrecord("( }{([^@@@@]))"," }{<!--SPACE-->@@1")
+
+
+REM delete { } ;
+
+insertrecord("(([@.,@?!])}{ )" ,"@@1}{  ")
+
+insertrecord("(<!--BACKSLASHSEMICOLON-->}{ )","<!--BACKSLASHSEMICOLON-->}{  ")
+
+insertrecord("([;]?})","</sup></b></i></u>"+fontleft$+"<!--UNGROUP-->")
+
+REM Groups
+
+insertrecord ("({)","<!--GROUP-->")
+REM insertrecord ("(})","<!--UNGROUP-->")
+
+if 0 then 
+insertrecord("(}{ )","")
+insertrecord("(}{<!--CR-->)","")
+
+insertrecord("(}{)","")
+insertrecord("(}<!--CR-->{)","")
+insertrecord("({@@*)","")
+
+insertrecord("({)","")
+insertrecord("(})","")
+fi
+REM space delete
+
+insertrecord("(> , )",">, ")
+
+insertrecord("(<!--CR--> <!--CR-->)","<!--SPACE--><!--CR-->")
+
+insertrecord("(<!--BACKSLASHSEMICOLON--> <!--CR-->)","<!--SPACE-->")
+
+insertrecord("(<!--CR--> )","<!--SPACE-->")
+
+insertrecord("(> <)","><")
+
+REM delete spaces before ",","." - except ".."
+
+insertrecord("( @@.@@.)","  ..")
+insertrecord("( ([,@@.]))","@@1")
+
+insertrecord("(<([ibu])> )","<@@1>")
+
+insertrecord("(<sup> )","<sup>")
+#insertrecord("(<sub> )","<sub>")
+
+insertrecord("(</sup></b></i></u>"+fontleft$+"@@.)","</sup></b></i></u>"+fontleft$+".")
+
+insertrecord("(</sup></b></i></u>@@.)","</sup></b></i></u>.")
+
+preg_compiler.opt=1
+insertrecord("(</table><table cellpadding='0' cellspacing='0' border='1' align='center' width='"+tablewidth$+"'>)","<tr>")
+insertrecord("(</table><!--CR--><!--CR--><table cellpadding='0' cellspacing='0' border='1' align='center' width='"+tablewidth$+"'>)","<tr>")
+insertrecord("(</table><!--CR--><table cellpadding='0' cellspacing='0' border='1' align='center' width='"+tablewidth$+"'>)","<tr>")
+insertrecord("(<td>"+fontdefault$+"</td>)","")
+insertrecord("(<td><!--CR--><!--CR--></td>)","")
+insertrecord("(<td><!--CR--></td>)","")
+preg_compiler.opt=0
+
+REM restore text values
+
+
+insertrecord("(<!--BACKSLASH-->)","@@@@")
+insertrecord("(<!--BRACERIGHT-->)","{")
+insertrecord("(<!--BRACELEFT-->)","}")
+insertrecord("(<!--BACKSLASHSEMICOLON-->)",";")
+
+REM superscript - text
+
+
+
+
+preg_compiler.syn=0
+insertrecord("(<sup>[ @)]?</sup>)","")
+preg_compiler.syn=1
+insertrecord("(<sup>([^<>/]*)</sup>)"," [@@1]")
+
+insertrecord("(<[/]?sup>)","")
+
+REM html corrections
+
+insertrecord("(@[[ ]*@])","")
+
+insertrecord("("+fontleft$+"</([uib])>)","</@@1>"+fontleft$)
+
+insertrecord("(<!--CR-->)","")
+
+REM insertrecord("(<!--SPACE-->)"," ")
+
+insertrecord("((<b>[^<]*)<b>)","@@1")
+insertrecord("((<i>[^<]*)<i>)","@@1")
+insertrecord("((<u>[^<]*)<u>)","@@1")
+
+REM s,z,k,v
+
+insertrecord("( ([szkv]) )"," @@1&nbsp;")
+
+
+insertrecord("(</p>)","@n</p>")
+
+REM create hyperlinks
+
+REM -- new -- anti colision
+insertrecord("(<a href='http)","@02")
+insertrecord("(<a href='ftp)","@03")
+REM ---
+
+REM insertrecord("(http://([~a-zA-Z0-9@@._%@@-/:@@?%=+&;]*))","<a href=@\"http://@@1@\">"+httplinkcolor1$+"@@1"+httplinkcolor2$+"</a>")
+
+insertrecord("(http([s]?)://([~a-zA-Z0-9@@._%@@-/:@@?%=+&;]*))","<a href=@\"http@@1://@@2@\">"+httplinkcolor1$+"@@2"+httplinkcolor2$+"</a>")
+
+insertrecord("(ftp://([~a-zA-Z0-9@@._%@@-/:@@?%=+@"+oct$(64)+"]*))","<a href=@\"ftp://@@1@\">"+httplinkcolor1$+"@@1"+httplinkcolor2$+"</a>")
+
+REM -- new -- anti colision
+insertrecord("(@02)","<a href='http")
+insertrecord("(@03)","<a href='ftp")
+REM ---
+
+
+insertrecord("(([-a-zA-Z0-9@@._]*)@"+oct$(64)+"([-a-zA-Z0-9@@._]*))","<a href=@\"mailto:@@1@"+oct$(64)+"@@2@\">"+emaillinkcolor1$+"@@1@"+oct$(64)+"@@2"+emaillinkcolor2$+"</a>")
+
+REM for a=1 to 10
+REM insertrecord("(<a href=@\"([a-zA-Z]*)://([^&]*)&amp;([^@\"]*))","<a href=@\"@@1://@@2@02@@3")
+REM next a
+
+srepeatrecord("(<a href=@\"([a-zA-Z]*)://([^&]*)&amp;([^@\"]*))","<a href=@\"@@1://@@2@02@@3")
+
+insertrecord("(@02)","&")
+
+
+
+
+
+saverecords("rtftohtm.php","")
+printcounter()

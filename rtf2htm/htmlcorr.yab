@@ -1,0 +1,128 @@
+#!/usr/local/bin/yabasic
+
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+#    (C) Martin Mevald, 2002, 2003, 2004, 2005
+#    martinmv@penguin.cz
+#    http://www.penguin.cz/~martinmv/
+
+
+
+import preg_compiler
+changeescape("@")
+
+sub srepeatrecord(a$,b$)
+saverecords("htmlcorr.php","") : REM internal
+repeatrecord(a$,b$)
+end sub
+
+
+preg_compiler.opt=1
+
+fontcenter$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='3'>"
+fontleft$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>"
+fontf$="<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='1'>"
+
+REM html corrections
+
+insertrecord("(@[[ ]*@])","")
+insertrecord("(<!--NONE-->)","")
+
+preg_compiler.opt=0
+
+insertrecord("((<b>[ ]?[^<]*)<b>)","@@1")
+insertrecord("((<i>[ ]?[^<]*)<i>)","@@1")
+insertrecord("((<u>[ ]?[^<]*)<u>)","@@1")
+
+insertrecord("(<b>[ ]?(<[^>]*>)</b>)","@@1")
+insertrecord("(<i>[ ]?(<[^>]*>)</i>)","@@1")
+insertrecord("(<u>[ ]?(<[^>]*>)</u>)","@@1")
+
+REM ---new---
+insertrecord("(<b>[ ]*</b>)","")
+insertrecord("(<i>[ ]*</i>)","")
+insertrecord("(<u>[ ]*</u>)","")
+REM ----
+
+preg_compiler.opt=1
+insertrecord("("+fontleft$+"</([uib])>)","</@@1>"+fontleft$)
+
+insertrecord("("+fontcenter$+"</([uib])>)","</@@1>"+fontcenter$)
+
+insertrecord("(<i>"+fontleft$+")",fontleft$+"<i>")
+insertrecord("(<b>"+fontleft$+")",fontleft$+"<b>")
+insertrecord("(<u>"+fontleft$+")",fontleft$+"<u>")
+
+insertrecord("(<i>"+fontcenter$+")",fontcenter$+"<i>")
+insertrecord("(<b>"+fontcenter$+")",fontcenter$+"<b>")
+insertrecord("(<u>"+fontcenter$+")",fontcenter$+"<u>")
+
+insertrecord("(</font>[@n ]*<br><font[^>]*>)","@n<br>")
+
+
+
+REM font optimalisation
+
+
+insertrecord("(<font[^>]*>@n</font>)","")
+
+srepeatrecord("("+fontleft$+"([@n ]*)"+fontleft$+")",fontleft$+"@@1")
+srepeatrecord("("+fontcenter$+"([@n ]*)"+fontcenter$+")",fontcenter$+"@@1")
+srepeatrecord("("+fontcenter$+"([@n ]*)"+fontleft$+")",fontcenter$+"@@1")
+srepeatrecord("("+fontf$+"([@n ]*)"+fontf$+")",fontf$+"@@1")
+
+
+insertrecord("(</li></ul><br><ul><li>)","</li></ul>@n<ul><li>")
+insertrecord("(</li></ul>@n<br>@n<ul><li>)","</li></ul>@n<ul><li>")
+
+srepeatrecord("(([a-zA-Z0-9])"+fontleft$+"([a-zA-Z0-9]))","@@1@@2")
+srepeatrecord("(([a-zA-Z0-9])"+fontcenter$+"([a-zA-Z0-9]))","@@1@@2")
+srepeatrecord("(([a-zA-Z0-9])"+fontf$+"([a-zA-Z0-9]))","@@1@@2")
+
+REM ---new---
+insertrecord("(<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'></font>)","")
+REM insertrecord("(</p>)","</font></p>")
+insertrecord("(<font)","</font><font")
+REM ----
+
+x$=system$("php -f version_out.php")
+
+if (x$="VER1") then special_footnotes=1
+else if (x$="VER0") then special_footnotes=0
+else error "version.php - unknown version"
+fi
+fi
+
+if (special_footnotes) then
+
+insertrecord("(<font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>#</font><font face='Verdana, Helvetica CE, Arial CE, Helvetica, Arial' size='2'>#)","##")
+
+fi
+
+
+REM nejak rozdelit podle radku
+REM insertrecord("(>)",">@015@012")
+
+insertrecord("(<p>)","<p>@015@012")
+insertrecord("(<br>)","<br>@015@012")
+insertrecord("(<a>)","@015@012<a>")
+insertrecord("(</a>)","</a>@015@012")
+
+
+REM space
+insertrecord("(<!--SPACE-->)"," ")
+
+saverecords("htmlcorr.php","")
+printcounter()

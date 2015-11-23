@@ -1,0 +1,78 @@
+
+                                RTF2HTM
+                                
+Version: 3.6
+Last change: 22.10. 2005
+
+Program requires: php (www.php.org), yabasic - for development (www.yabasic.de)
+
+Program converts the rtf document to the html (in the ISO Latin 2 encoding).
+
+         rtf2htm          file.rtf file.html
+	 rtf2htm -par     file.rtf file.html
+Windows: rtf2htm.bat      file.rtf file.html
+         rtf2htm.bat -par file.rtf file.html
+	 
+-par	 Translate all paragraphs as the "p" html command.
+The rtf commands sa and sb (Space After, Space Before) will be ignored.
+
+-nosmall The Footnote font size is 2 (otherwise 1). 
+
+This version doesn't work with images yet.
+
+RTF's supported features:
+
+	- Bullets
+
+	- Superscript and subscript look bad in html document.
+Subscript is transformed to number. Superscript is  transformed to "[number]".
+
+	- Text: bold, italic and underline
+        
+        - Footnotes
+
+	- Alignments: left, center and right. "Justify" alignment
+looks bad - program use left alignment. Centered text is greater.
+
+	- Tables 
+        
+	- Links: text "aaa@bbb.cz" and "http://www.aaaaaa.cz" convert 
+to html links.
+
+	- Unicode: Commentary with the character
+name is added to the non ISO Latin2 characters. The program htm2htm will 
+convert html with commentaries to the unicode.
+
+	- Rtf commands sa and sb. 
+(sa>0) or  (sb>0)	New paragraph - "p" html command
+(sa=0) and (sb=0)       New paragraph (left aligned text) - "<br>" 
+        
+
+ ----- Files 
+ 
+yabasic/ - libraries for YaBasic
+yabasic/preg_debuger.yab - debuger
+speed/ - speed calculation (appreciation)
+
+rtf2htm.php    - program
+rtf2htm.bat    - Windows: run rtf2htm.php
+htmlparser.php - optimizes html code, processes html commands,
+corrects MS Office tables
+
+rtfimages.php        - search and delete images
+rtfimages_correc.php
+rtfimages_correc.yab - generate rtfimages_correc.php
+
+rtftohtm.php - regular expressions for rtf to html conversion 
+rtftohtm.yab - generate rtftohtm.php
+htmlcorr.php - changes htmlparser.php output
+htmlcorr.yab
+small_meta.php - converts metacommands to lowercase
+small_meta.yab
+xcsupper.php - converts iso latin2 text to uppercase
+xcsupper.yab
+
+
+Martin Mevald, 2002, 2003, 2004, 2005
+http://martinmv.wz.cz
+martinmv@centrum.cz

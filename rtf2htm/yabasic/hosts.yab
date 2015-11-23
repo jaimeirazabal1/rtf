@@ -1,0 +1,95 @@
+
+docu Martin Mevald, 2002, 2005, martinmv@centrum.cz
+docu http://martinmv.wz.cz
+docu
+
+REM if (peek$("os")="windows") wecho$=system$("echo")
+
+export sub env$(name$)
+docu env$(name$) - read enviroment variable
+docu
+
+return peek$("env",name$)
+end sub
+
+
+if (peek$("library")="main") then
+print "env$(\"PWD\") = "+env$("PWD")
+print "env$(\"windir\") = "+env$("windir")
+print
+fi
+
+
+
+if (peek$("os")="windows") then 
+hpath$=env$("windir")+"\\hosts"
+else
+hpath$="/etc/hosts"
+fi
+
+
+count=0
+maxh=50
+
+dim host$(maxh)
+dim ip$(maxh)
+
+dim words$(1)
+
+fd=open(hpath$,"r")
+
+
+
+if (fd>0) then 
+
+    while (not eof(fd))
+
+
+    line input #fd x$
+
+	if (len(x$)=0) continue
+
+
+    num=token(x$,words$()," \t\v")
+    
+    if (num<2) continue
+    if (mid$(words$(1),1,1)="#") continue
+    
+    for a=2 to num
+    
+        count=count+1
+    
+        if (count>maxh) then
+            maxh=maxh+50
+            dim host$(maxh)
+            dim ip$(maxh)
+        fi
+    
+        ip$(count)=words$(1)
+        host$(count)=lower$(words$(a))
+    
+    next a
+    
+    wend
+    
+close(fd)
+fi
+
+
+export sub host2ip$(h$)
+docu host2ip$(name$) - convert host name to ip address (according to the hosts file)
+docu
+
+h$=lower$(h$)
+
+for a=1 to count
+if (host$(a)=h$) return ip$(a)
+next a
+return ""
+
+end sub   
+
+if (peek$("library")="main") then
+print "localhost = "+host2ip$("localhost")
+fi
+    

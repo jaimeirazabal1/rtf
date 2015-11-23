@@ -1,0 +1,143 @@
+#!/usr/local/bin/yabasic
+
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with this program; if not, write to the Free Software
+#    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+#
+#    (C) Martin Mevald, 2002, 2003, 2004, 2005
+#    martinmv@penguin.cz
+#    http://www.penguin.cz/~martinmv/
+
+import bfile
+import hosts
+
+sub rstr$(x)
+local a$,b,c$
+
+a$=str$(x)
+c$=""
+for b=3 to len(a$) step -1
+c$=c$+"0"
+next b
+c$=c$+a$
+
+return c$
+end sub
+
+sub reset_file(file$)
+local fd
+fd=open(file$,"w")
+if (fd<=0) error "I can't open file "+file$
+close(fd)
+end sub
+
+sub save_file(file$,aline)
+local fd,a
+
+fd=open(file$,"w")
+if (fd<=0) error "I can't open file "+file$
+
+for a=1 to rtftohtm_count
+    if (a>aline)  print #fd "REM DEBUG ";
+    print #fd rtftohtm_text$(a)
+next a
+
+print #fd srecords$
+print #fd pcounter$
+
+close(fd)
+
+end sub
+
+if (peek("argument")<>2) then
+print "preg_debug.yab input_file.rtf output_file.html"
+print
+print "Program reads file rtftohtm.yab, enable commands incrementally from line 3 "
+print "or from enviroment variable PREG_DEBUG_LINE to end of file. "
+print "Debuger calls rtf2htm.php input_file.rtf LINENUMBERoutput_file.html"
+print "Program creates backup file backup_rtftohtm.yab"
+print 
+exit
+fi
+
+if (peek$("os")="windows") then
+
+rtftohtm$="yabasic rtftohtm.yab"
+rtf2htm$="rtf2htm.bat "
+
+else
+
+rtftohtm$="./rtftohtm.yab"
+rtf2htm$="./rtf2htm.php "
+
+fi
+
+
+ifile$=peek$("argument")
+ofile$=peek$("argument")
+
+startline=val(env$("PREG_DEBUG_LINE"))
+readfile$="rtftohtm.yab"
+if (startline>3) readfile$="backup_rtftohtm.yab"
+
+print "Reading "+readfile$+" ..."
+
+rtftohtm_fd=bf_open(readfile$)
+if (rtftohtm_fd<=0) error "I can't open file "+readfile$
+
+dim rtftohtm_text$(5000)
+rtftohtm_count=0
+
+while (not bf_eof(rtftohtm_fd))
+
+rtftohtm_count=rtftohtm_count+1
+x$=bf_input$(rtftohtm_fd)
+
+if (instr(x$,"printcounter")>0) then pcounter$=x$  
+elsif (instr(x$,"saverecords")>0) then
+srecords$=x$
+if (instr(x$,"internal")>0) rtftohtm_text$(rtftohtm_count)=x$
+else  
+    rtftohtm_text$(rtftohtm_count)=x$
+fi
+
+wend
+
+bf_close (rtftohtm_fd)
+
+if (startline<3) then 
+print "Saving backup_rtftohtm.yab ..."
+save_file("backup_rtftohtm.yab",1000000)
+startline=3
+fi
+
+for x=startline to rtftohtm_count
+
+r$=trim$(rtftohtm_text$(x))
+
+if ((r$<>"") and (left$(r$,1)<>"#") and (upper$(left$(r$,3))<>"REM")) then
+
+reset_file("rtftohtm.php")
+print "line count = ",x
+save_file("rtftohtm.yab",x)
+    if (system(rtftohtm$)=0) then
+system (rtf2htm$+"\""+ifile$+"\" \""+rstr$(x)+ofile$+"\"")
+fi
+
+fi
+
+next x
+
+
+print "Saving rtftohtm.yab ..."
+save_file("rtftohtm.yab",1000000)

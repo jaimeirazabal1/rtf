@@ -1,0 +1,79 @@
+codewindows$="C1C4C8CFC9CCCDC5BCD2D3D4D6D5C0D88A8DDAD9DCDBDD8EE1E4E8EFE9ECEDE5BEF2F3F4F6F5E0F89A9DFAF9FCFBFD9E"
+    codeiso$="C1C4C8CFC9CCCDC5A5D2D3D4D6D5C0D8A9ABDAD9DCDBDDAEE1E4E8EFE9ECEDE5B5F2F3F4F6F5E0F8B9BBFAF9FCFBFDBE"
+codeunicode$="00C100C4010C010E00C9011A00CD0139013E014700D300D400D60150015401580160016400DA016E00DC017000DD017D00E100E4010D010F00E9011B00ED013A013E014800F300F400F60151015501590161016500FA016F00FC017100FD017E"
+
+size=len(codewindows$)
+
+if (len(codeiso$)<>size) then error "Invalid code table"
+fi
+
+
+insertrecord("(<!--CR-->)","@02")
+
+a=1
+
+pos=1
+unicodepos=1
+
+if (peek$("library")="main") then main=1
+else main=0
+fi
+
+while (a<size)
+
+b$=mid$(codewindows$,a,2)
+c$=mid$(codeiso$,a,2)
+
+uc=dec(mid$(codeunicode$,unicodepos,4))
+
+unicodepos=unicodepos+4
+
+par1$=lower$(b$)
+par2$=chr$(dec(c$))
+
+print "\\'"+par1$+" = "+par2$+" = "+str$(uc)
+
+if (main=0) then 
+
+REM unicode + character
+
+h3$=chr$(dec(b$))
+
+if (h3$<>par2$) then
+h3$="|"+h3$
+else
+h3$=""
+fi
+
+REM hexadecimal characters
+
+h11$=mid$(par1$,1,1)
+h12$=mid$(par1$,2,1)
+
+if (h11$<>upper$(h11$)) h11$="["+h11$+upper$(h11$)+"]"
+if (h12$<>upper$(h12$)) h12$="["+h12$+upper$(h12$)+"]"
+ 
+REM insertrecord("((@@@@'"+h11$+h12$+")",par2$)
+
+rec$="@@@@u"+str$(uc)+"[@02]{0,2}@@@@'[0-9a-fA-F][0-9a-fA-F]|"
+rec$=rec$+"@@@@u"+str$(uc)+" |@@@@u"+str$(uc)+"([^0-9])"+h3$+"|"
+rec$=rec$+"@@@@'"+h11$+h12$
+
+insertrecord("("+rec$+")",par2$+"@@1")
+
+fi
+
+pos=pos+1
+
+if (pos>5) then print
+pos=1
+fi
+
+a=a+2
+
+wend
+
+print
+
+insertrecord("(@02)","<!--CR-->")
+

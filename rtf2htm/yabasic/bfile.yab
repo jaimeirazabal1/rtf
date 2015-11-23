@@ -1,0 +1,74 @@
+docu Library reads binary files.
+docu 
+B_FD=100000
+
+docu bf_open(filename$) - open binary file, return "binary file number"
+docu
+export sub bf_open(filename$)
+local fd
+
+fd=open(filename$,"rb")
+if (fd<=0) return fd
+return B_FD+fd
+end sub
+
+docu bf_input$(fd) - read line (until chars 0, 10 or 13)
+docu
+export sub bf_input$(fd)
+local xfd,a,x$
+
+xfd=fd-B_FD
+x$=""
+
+a=peek(#xfd)
+
+while ( (not eof(xfd)) and (a<>10) and (a<>0))
+if (a<>13) x$=x$+chr$(a)
+a=peek(#xfd)
+wend
+
+return x$
+end sub
+
+docu bf_eof(fd) - check eof
+docu
+export sub bf_eof(fd)
+return eof(fd-B_FD)
+end sub
+
+docu bf_hexread$(fd,num,tempfile$) - read num bytes of file, return hexadecimal values (tempfile$ - temporary file)
+docu
+export sub bf_hexread$(fd,num,tempfile$)
+local xfd,count,b$,fdout,output$
+xfd=fd-B_FD
+count=0
+
+fdout=open(tempfile$,"w")
+if (fdout<=0) error "I can't open "+tempfile$
+
+while ((count<num) and (not eof(xfd)))
+b$=hex$(peek(#xfd))
+if (len(b$)<2) b$="0"+b$
+print #fdout b$;
+count=count+1
+wend
+
+close(fdout)
+
+if (peek$("os")="unix") then 
+output$=system$("cat \""+tempfile$+"\"")
+else
+output$=system$("type \""+tempfile$+"\"")
+fi
+
+return output$
+end sub
+
+
+docu bf_close(fd) - close binary file
+docu
+export sub bf_close(fd)
+close (fd-B_FD)
+end sub
+
+

@@ -1,0 +1,79 @@
+
+                                RTF2HTM
+                                
+Verze: 3.6
+Datum poslední zmìny: 22.10. 2005
+
+Vy¾aduje: php (www.php.org), pro vývoj yabasic (www.yabasic.de)
+
+Program pøevádí rtf dokument na html (v ISO Latin 2).
+
+         rtf2htm          soubor.rtf soubor.html
+	 rtf2htm -par     soubor.rtf soubor.html
+Windows: rtf2htm.bat      soubor.rtf soubor.html
+         rtf2htm.bat -par soubor.rtf soubor.html
+	 
+-par	 Ka¾dý odstavec se bude pøekládat jako html pøíkaz "p".
+Rtf pøíkazy sa a sb (Space After, Space Before) budou ignorovány.	 
+
+-nosmall Velikost písma poznámek pod èarou bude 2 (jinak 1). 
+
+	 
+Tato verze zatím nepracuje s obrázky.
+
+Podporované vlastnosti RTF:
+
+	- Puntíky (bullety)
+
+	- Horní a dolní indexy vypadají v html dokumentu ¹patnì.
+Dolní index se zobrazuje jako èíslo, horní jako [èíslo].
+
+	- Tuèný text, italiku a podtr¾ení textu
+        
+        - Poznámky pod èarou
+
+	- Zarovnání: vlevo, na støed a vpravo. Zarovnání "Justify"
+vypadá ¹patnì - text se zarovná vlevo. Text zarovnaný na støed je
+o jednu velikost vìt¹í.
+
+	- Tabulky
+
+	- Odkazy: text "aaa@bbb.cz" a "http://www.aaaaaa.cz" pøevádí 
+na html odkazy.
+
+	- Unicode: Ke znakùm, jen¾
+nejsou v ISO Latin 2, se pøidá komentáø se jménem znaku. Program 
+htm2htm bude pøevádìt html s komentáøi na html v unicode.
+
+	- Rtf pøíkazy sa a sb. 
+(sa>0) or  (sb>0)	Nový odstavec - "p" html pøíkaz
+(sa=0) and (sb=0)       Nový odstavec vlevo zarovnaného textu - "<br>" 
+
+
+ ----- Soubory
+
+yabasic/ - knihovny pro YaBasic
+yabasic/preg_debuger.yab - debuger
+speed/ - výpoèet rychlosti programu (odhad)
+
+rtf2htm.php    - program 
+rtf2htm.bat    - Windows: spou¹tí rtf2htm.php
+htmlparser.php - optimalizace html kódu, zpracování nìkterých 
+html pøíkazù, korekce tabulek z MS Office
+
+rtfimages.php        - hledá a ma¾e obrázky
+rtfimages_correc.php
+rtfimages_correc.yab - generuje rtfimages_correc.php
+
+rtftohtm.php - regulární výrazy pro pøevod rtf na html (automaticky generováno)
+rtftohtm.yab - generuje rtftohtm.php
+htmlcorr.php - upravuje výstup z htmlparser.php
+htmlcorr.yab
+small_meta.php - pøevádí metapøíkazy na malá písmena
+small_meta.yab
+xcsupper.php - pøevádí iso latin2 text na velká písmena
+xcsupper.yab
+
+Martin Mevald, 2002, 2003, 2004, 2005
+http://martinmv.wz.cz
+martinmv@centrum.cz

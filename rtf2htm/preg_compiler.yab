@@ -1,0 +1,230 @@
+
+docu Preg compiler builds PHP regular expressions for preg_replace function. 
+docu
+docu    This program is free software; you can redistribute it and/or modify
+docu    it under the terms of the GNU General Public License as published by
+docu    the Free Software Foundation; either version 2 of the License, or
+docu    (at your option) any later version.
+docu
+docu    This program is distributed in the hope that it will be useful,
+docu    but WITHOUT ANY WARRANTY; without even the implied warranty of
+docu    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+docu    GNU General Public License for more details.
+docu
+docu    You should have received a copy of the GNU General Public License
+docu    along with this program; if not, write to the Free Software
+docu    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+docu
+docu (C) Martin Mevald, 2002, 2003, 2004, 2005 email: martinmv@centrum.cz
+docu http://martinmv.wz.cz
+docu
+
+print "Starting preg_compiler..."
+maxrecords=500
+savemode$="w"
+
+dim preg_pattern$(maxrecords)
+dim preg_replace$(maxrecords)
+dim words$(1)
+
+docu Internal variables:
+docu
+docu preg_compiler.syn=1 (default) enables simple syntax control
+docu                     counts of "(" and ")" must be equal
+docu preg_compiler.syn=0 disables syntax control
+docu -------------------
+docu
+docu preg_compiler.opt=1 enables a simple optimization
+docu
+docu insertrecord("(Diana)","Alena")
+docu insertrecord("(Kamila)","Alena")
+docu
+docu Preg_compiles transfers commands to:
+docu
+docu $pattern=array("(Diana|Kamila)");
+docu $replace=array("Alena");
+docu
+docu preg_compiler.opt=0 (default) a disables optimization
+docu -------------------
+docu -------------------
+
+syn=1
+opt=0
+opt_count=0
+
+escape$=""
+
+counter=0
+tcounter=0
+records_saved=0
+
+fname$=""
+ename$=""
+
+export sub changeescape(x$)
+docu
+docu changeescape(character$) - function changes escape character
+docu Example: changeescape("@") - "@" is converted to "\" in PHP code
+docu Warning: @ -   "\"     PHP code escape
+docu          @@   - "\\"   escape in regular expression
+docu          @@@@ - "\\\\" character "\" 
+docu
+
+if (len(x$)<>1) error "changeescape - length <> 1"
+escape$=x$
+print "Escape character = "+escape$
+end sub
+
+export sub insertrecord(xpattern$,xreplace$)
+docu insertrecord(xpattern$,xreplace$) - inserts search/replace record
+docu Example: insertrecord("(day)","night") - change word "day" to "night"
+docu 
+
+counter=counter+1
+
+if (syn>0) then
+
+num1=split(xpattern$,words$(),"(")
+num2=split(xpattern$,words$(),")")
+
+if (num1<>num2) error "Syntax error - "+xpattern$
+
+fi
+
+if (opt>0) then
+
+x=1
+
+while (x<counter)
+if (preg_replace$(x)=xreplace$) then
+    xpattern$=right$(xpattern$,len(xpattern$)-1)
+    z$=preg_pattern$(x)
+    preg_pattern$(x)=left$(z$,len(z$)-1)+"|"+xpattern$
+    x=1e6
+    
+fi
+x=x+1
+wend
+
+if (x>=1e6) then
+counter=counter-1
+opt_count=opt_count+1
+return
+fi
+
+fi 
+
+if (counter>maxrecords) then
+maxrecords=maxrecords+500
+dim preg_pattern$(maxrecords)
+dim preg_replace$(maxrecords)
+fi
+
+preg_pattern$(counter)=xpattern$
+preg_replace$(counter)=xreplace$
+
+records_saved=0
+end sub
+
+sub escapecharacter$(a$)
+
+ret$=""
+
+if (escape$="") return a$
+
+for xc=1 to len(a$)
+char$=mid$(a$,xc,1)
+if (char$=escape$) then ret$=ret$+"\\"
+else ret$=ret$+char$
+fi
+next xc
+
+return ret$
+end sub
+
+export sub saverecords(filename$,exportname$)
+docu saverecords(filename$,exportname$) - generates PHP code
+docu exportname$ - prefix for input and output variable
+docu Example: saverecords("rtftohtm.php","xx") generates: 
+docu ---------
+docu <?
+docu $pattern=array("(alenka)");
+docu $replace=array("lenka");
+docu $xxoutput=preg_replace($pattern,$replace,$xxinput);
+docu ?>
+docu ---------
+
+fname$=filename$
+ename$=exportname$
+
+print "Saving "+str$(counter)+" records... ("+filename$+")"
+
+if (counter=0) return
+
+open 1,filename$,savemode$
+print #1 "<?"
+print #1 "$pattern=array(";
+
+for x=1 to counter
+
+#print preg_pattern$(x)," --> ",preg_replace$(x)
+
+if (x<>1) print #1 ",";
+
+print #1 "\""+escapecharacter$(preg_pattern$(x))+"\"";
+
+next x
+print #1 ");"
+
+print #1 "$replace=array(";
+
+for x=1 to counter
+if (x<>1) print #1 ",";
+print #1 "\""+escapecharacter$(preg_replace$(x))+"\"";
+next x
+print #1 ");"
+
+print #1 "$"+exportname$+"output=preg_replace($pattern,$replace,";
+print #1 "$"+exportname$+"input);"
+print #1 "?>"
+
+close 1
+
+tcounter=tcounter+counter
+counter=0
+records_saved=1
+end sub
+
+export sub repeatrecord(xpattern$,xreplace$)
+docu
+docu repeatrecord(xpattern$,xreplace$) - Inserts search/replace record
+docu and repeat it until there is no file change.
+docu Before repeatrecord must be used function saverecords.
+docu
+
+if (not records_saved) error ("Before repeatrecord must be used function saverecords!")
+
+xpattern$=escapecharacter$(xpattern$)
+xreplace$=escapecharacter$(xreplace$)
+
+open 1,fname$,"a"
+
+print #1 "<? do {"
+print #1 "    $input=$output;"
+print #1 "    $output=preg_replace(\""+ename$+xpattern$+"\",\""+ename$+xreplace$+"\",$input);"
+print #1 "    } while ($input!=$output); ?>"
+
+close 1
+
+savemode$="a"
+end sub
+
+export sub printcounter()
+docu printcounter() - prints count of all records
+docu
+docu "All records"   - all records in variable $pattern
+docu "5 optimized" - 5 insertrecord commands  optimized
+print "All records: ",tcounter
+print opt_count," optimized"
+end sub
+

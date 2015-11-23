@@ -1,0 +1,50 @@
+docu Math library
+docu http://www.penguin.cz/~martinmv
+docu Martin Mevald, martinmv@penguin.cz
+docu
+
+export sub langrange(x(),y(),n,x0)
+docu langrange(x(),y(),n,x0)
+docu
+docu Langrange's interpolation 
+docu return value = f(x0)
+docu n - number elements in arrays x() and y()
+docu
+
+local p,k,b,i
+
+p=0
+for k=1 to n
+    
+    b=1
+    for i=1 to n
+    if (i<>k) b=b*((x0-x(i))/(x(k)-x(i)))
+    next i
+    
+p=p+b*y(k)
+next k
+
+return p
+end sub
+
+if (peek$("library")="main") then
+
+dim x(5)
+dim y(5)
+
+x(1)=1 : y(1)=5
+x(2)=2 : y(2)=10
+x(3)=3 : y(3)=15
+x(4)=4 : y(4)=20
+x(5)=5 : y(5)=25
+
+print "Langrange's interpolation test:"
+print "5*2,5 = ",langrange(x(),y(),5,2.5)
+print "5*10 = ",langrange(x(),y(),5,10)
+print "5*6 = ",langrange(x(),y(),5,6)
+print "5*1000 = ",langrange(x(),y(),5,1000)
+print
+
+
+fi
+    
